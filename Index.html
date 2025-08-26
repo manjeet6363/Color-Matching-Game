@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Match Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: none;
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .game-area {
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            max-height: 900px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
+            color: #555;
+            text-align: center;
+        }
+        .game-score {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #555;
+        }
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #555;
+        }
+        .falling-object {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .player-wheel {
+            position: absolute;
+            bottom: 20px;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            border: 8px solid #f0f0f0;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            z-index: 10;
+            transition: transform 0.2s ease-in-out;
+        }
+        .wheel-center {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 11;
+        }
+        .player-pointer {
+            position: absolute;
+            bottom: 120px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            background-color: #ff6b6b; /* Fixed pointer color */
+            z-index: 9;
+        }
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        .game-over-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        .final-score {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        .restart-button {
+            padding: 12px 30px;
+            background-color: #66bb6a;
+            color: #ffffff;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, background-color 0.2s;
+            box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .restart-button:hover {
+            background-color: #5cb85d;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="game-area" id="game-area">
+        <div class="game-header">
+            <div class="game-title">Color Match</div>
+            <div class="game-score" id="score">0</div>
+        </div>
+        <!-- Player wheel with conic gradient for segments -->
+        <div class="player-wheel" id="player-wheel">
+            <div class="wheel-center" id="wheel-center"></div>
+        </div>
+        <!-- Fixed player pointer -->
+        <div class="player-pointer" id="player-pointer"></div>
+
+        <!-- Game Over Screen -->
+        <div class="game-over-screen" id="game-over-screen">
+            <div class="game-over-text">Game Over</div>
+            <div class="final-score" id="final-score">Score: 0</div>
+            <button class="restart-button" id="restart-button">Play Again</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Game Elements & Variables ---
+        const gameArea = document.getElementById('game-area');
+        const scoreDisplay = document.getElementById('score');
+        const playerWheel = document.getElementById('player-wheel');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+
+        // Color palette with six colors
+        const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#2ecc71'];
+        const numColors = colors.length;
+        const segmentAngle = 360 / numColors;
+        let rotation = 0;
+        let score = 0;
+        let gameActive = false;
+        let fallingObjects = [];
+
+        // Game settings
+        const objectSpeed = 1.80;
+        let spawnInterval = 1500; // ms
+        const spawnIntervalDecreaseRate = 20; // ms
+
+        let lastSpawnTime = Date.now();
+        let animationFrameId = null;
+
+        // Variables for the spin gesture
+        let isDragging = false;
+        let lastAngle = 0;
+
+        // --- Game Logic ---
+
+        // Function to create and add a new falling object
+        function spawnObject() {
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const gameAreaRect = gameArea.getBoundingClientRect();
+
+            // Calculate the horizontal spawning position to be directly above the player wheel's center
+            const spawnX = (gameAreaRect.width / 2) - (50 / 2); // 50 is the object width
+
+            const obj = document.createElement('div');
+            obj.className = 'falling-object';
+            obj.style.backgroundColor = randomColor;
+            obj.style.left = `${spawnX}px`;
+            obj.style.top = `-50px`;
+            obj.dataset.color = randomColor; // Store the original hex color
+            obj.dataset.y = -50;
+            fallingObjects.push(obj);
+            gameArea.appendChild(obj);
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (!gameActive) return;
+
+            const now = Date.now();
+            if (now - lastSpawnTime > spawnInterval) {
+                spawnObject();
+                lastSpawnTime = now;
+            }
+
+            // Update positions of all falling objects
+            fallingObjects.forEach((obj, index) => {
+                const y = parseFloat(obj.dataset.y) + objectSpeed;
+                obj.style.transform = `translateY(${y}px)`;
+                obj.dataset.y = y;
+
+                // Check for collision with the wheel
+                if (y + 50 > gameArea.clientHeight - playerWheel.clientHeight) {
+                    const wheelRect = playerWheel.getBoundingClientRect();
+                    const objectRect = obj.getBoundingClientRect();
+
+                    const wheelCenterCoords = {
+                        x: wheelRect.left + wheelRect.width / 2,
+                        y: wheelRect.top + wheelRect.height / 2
+                    };
+                    const objectCenter = {
+                        x: objectRect.left + objectRect.width / 2,
+                        y: objectRect.top + objectRect.height / 2
+                    };
+
+                    const dx = objectCenter.x - wheelCenterCoords.x;
+                    const dy = objectCenter.y - wheelCenterCoords.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // Check if object is within the wheel's radius
+                    if (distance < wheelRect.width / 2) {
+                        // Calculate the collision angle relative to the wheel's center
+                        const collisionAngleRad = Math.atan2(dy, dx);
+                        const collisionAngleDeg = collisionAngleRad * 180 / Math.PI;
+
+                        // Normalize the angle to be in the range [0, 360) and adjust for CSS conic-gradient
+                        // The conic-gradient starts at the top (12 o'clock).
+                        // Math.atan2 gives 0 at the right (3 o'clock).
+                        // A simple way to map this is to add 90 degrees.
+                        // We also need to factor in the wheel's rotation.
+                        // The CSS `rotate` is clockwise, so we subtract it from our angle.
+                        const segmentAngleAtCollision = (collisionAngleDeg + 90 - rotation + 360 * 2) % 360;
+
+                        // Get the index of the segment that was hit
+                        const segmentIndex = Math.floor(segmentAngleAtCollision / segmentAngle);
+
+                        // Compare the falling object's color with the color of the collided segment
+                        if (obj.dataset.color === colors[segmentIndex]) {
+                            score++;
+                            scoreDisplay.textContent = score;
+
+                            spawnInterval = Math.max(200, spawnInterval - spawnIntervalDecreaseRate);
+                        } else {
+                            score--;
+                            scoreDisplay.textContent = score;
+                            if (score < 0) {
+                                endGame();
+                                return;
+                            }
+                        }
+                        
+                        // Remove the object after collision check
+                        gameArea.removeChild(obj);
+                        fallingObjects.splice(index, 1);
+                    }
+                } else if (y + 50 > gameArea.clientHeight) {
+                    // Missed object, game over
+                    endGame();
+                    return;
+                }
+            });
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Handle the spin gesture
+        function getAngle(x, y) {
+            const rect = playerWheel.getBoundingClientRect();
+            const wheelX = rect.left + rect.width / 2;
+            const wheelY = rect.top + rect.height / 2;
+            return Math.atan2(y - wheelY, x - wheelX) * 180 / Math.PI;
+        }
+
+        function handleStart(e) {
+            if (!gameActive) return;
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            lastAngle = getAngle(clientX, clientY);
+            playerWheel.style.transition = 'none'; // Disable transition for smooth dragging
+        }
+
+        function handleMove(e) {
+            if (!isDragging || !gameActive) return;
+            e.preventDefault(); // Prevent scrolling on mobile devices
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const newAngle = getAngle(clientX, clientY);
+            let angleDifference = newAngle - lastAngle;
+
+            // Handle angle wrap-around
+            if (angleDifference > 180) angleDifference -= 360;
+            if (angleDifference < -180) angleDifference += 360;
+
+            rotation += angleDifference;
+            playerWheel.style.transform = `rotate(${rotation}deg)`;
+            lastAngle = newAngle;
+        }
+
+        function handleEnd() {
+            isDragging = false;
+            playerWheel.style.transition = 'transform 0.2s ease-in-out'; // Re-enable transition
+        }
+
+        // Start the game
+        function startGame() {
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameActive = true;
+            // Remove all existing falling objects from the game area
+            while (fallingObjects.length > 0) {
+                const obj = fallingObjects.pop();
+                if (obj.parentNode) {
+                    obj.parentNode.removeChild(obj);
+                }
+            }
+            
+            gameOverScreen.style.display = 'none';
+
+            // Reset game settings
+            spawnInterval = 1500;
+            rotation = 0;
+            playerWheel.style.transform = `rotate(0deg)`;
+            updateWheelSegments();
+
+            lastSpawnTime = Date.now();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateWheelSegments() {
+            let gradientString = 'conic-gradient(';
+            colors.forEach((color, index) => {
+                const start = index * segmentAngle;
+                const end = (index + 1) * segmentAngle;
+                gradientString += `${color} ${start}deg ${end}deg, `;
+            });
+            gradientString = gradientString.slice(0, -2) + ')';
+            playerWheel.style.background = gradientString;
+        }
+
+        // End the game
+        function endGame() {
+            gameActive = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            finalScoreDisplay.textContent = `Score: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // --- Event Listeners for Touch and Mouse ---
+        playerWheel.addEventListener('mousedown', handleStart);
+        playerWheel.addEventListener('mousemove', handleMove);
+        playerWheel.addEventListener('mouseup', handleEnd);
+        playerWheel.addEventListener('mouseleave', handleEnd); // End drag if mouse leaves the wheel
+
+        playerWheel.addEventListener('touchstart', (e) => handleStart(e), { passive: false });
+        playerWheel.addEventListener('touchmove', (e) => handleMove(e), { passive: false });
+        playerWheel.addEventListener('touchend', handleEnd);
+
+        restartButton.addEventListener('click', startGame);
+
+        // Start the game for the first time
+        startGame();
+    });
+</script>
+</body>
+</html>
