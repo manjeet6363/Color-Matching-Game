@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,6 +12,7 @@
 <!-- Tone.js for audio generation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
 <style>
+  /* --- Global and Layout Styles (CSS) --- */
   :root {
     --bg-color: #f0f2f5;
     --game-area-bg: #ffffff;
@@ -50,6 +52,7 @@
     align-items: center;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+
   .game-container {
     display: flex;
     justify-content: center;
@@ -59,6 +62,7 @@
     padding: 20px;
     box-sizing: border-box;
   }
+
   .game-area {
     position: relative;
     background-color: var(--game-area-bg);
@@ -76,6 +80,8 @@
     box-sizing: border-box;
     transition: height 0.3s ease, background-color 0.3s ease, width 0.3s ease, max-width 0.3s ease, max-height 0.3s ease;
   }
+  
+  /* --- Header and UI Elements (CSS) --- */
   .game-header {
     width: 100%;
     display: flex;
@@ -86,10 +92,12 @@
     text-align: center;
     flex-shrink: 0;
   }
+  
   .header-controls {
     display: flex;
     gap: 10px;
   }
+  
   .control-button {
     background: none;
     border: none;
@@ -99,17 +107,15 @@
     align-items: center;
     justify-content: center;
     color: var(--score-color);
-    font-size: 24px; /* Adjust font size for emojis/text */
+    font-size: 24px;
   }
-  .control-button svg {
-    width: 24px;
-    height: 24px;
-    fill: currentColor;
-  }
+  
   .game-score {
     font-size: clamp(1.5rem, 5vw, 2rem);
     font-weight: bold;
   }
+  
+  /* --- Game Elements (CSS) --- */
   .falling-object {
     position: absolute;
     width: 50px;
@@ -117,8 +123,10 @@
     border-radius: 50%;
     box-shadow: 0 4px 8px var(--shadow-medium);
   }
+  
   .player-wheel {
     position: absolute;
+    left: 50%;
     bottom: 40px;
     width: 250px;
     height: 250px;
@@ -132,9 +140,11 @@
     z-index: 10;
     transition: transform 0.2s ease-out, box-shadow 0.3s ease, border-color 0.3s ease;
   }
+  
   .player-wheel:active {
-      cursor: grabbing;
+    cursor: grabbing;
   }
+  
   .wheel-center {
     position: absolute;
     width: 30px;
@@ -145,9 +155,12 @@
     z-index: 11;
     transition: background-color 0.3s ease;
   }
+  
   .player-pointer {
     position: absolute;
-    bottom: 160px; /* Adjusted for triangle shape */
+    left: 50%;
+    margin-left: -15px;
+    bottom: 160px;
     width: 0;
     height: 0;
     border-left: 15px solid transparent;
@@ -156,10 +169,14 @@
     z-index: 9;
     filter: drop-shadow(0px 4px 4px var(--shadow-dark));
   }
+  
+  /* --- Game Over Screen (CSS) --- */
   .game-over-screen {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(255,255,255,0.85);
     backdrop-filter: blur(5px);
     display: flex;
@@ -174,24 +191,29 @@
     visibility: hidden;
     transition: opacity 0.5s ease, visibility 0.5s;
   }
+  
   body.dark-mode .game-over-screen {
     background: rgba(0,0,0,0.75);
   }
+  
   .game-over-screen.visible {
     opacity: 1;
     visibility: visible;
   }
+  
   .game-over-text {
     font-size: clamp(2.5rem, 10vw, 3.5rem);
     font-weight: bold;
     color: var(--accent-red);
     margin-bottom: 20px;
   }
+  
   .final-score {
     font-size: clamp(2rem, 8vw, 2.5rem);
     color: var(--text-color);
     margin-bottom: 40px;
   }
+  
   .restart-button, #fullscreen-button {
     padding: 12px 30px;
     color: #fff;
@@ -203,18 +225,22 @@
     transition: transform 0.2s ease, background-color 0.2s;
     box-shadow: 0 4px 15px var(--shadow-dark);
   }
+  
   .restart-button {
-     background-color: var(--accent-green);
+    background-color: var(--accent-green);
   }
+  
   .restart-button:hover {
     background-color: #27ae60;
     transform: translateY(-2px);
   }
+  
   #fullscreen-button {
     background-color: var(--accent-blue);
     font-size: clamp(0.8rem, 3vw, 1rem);
     padding: 8px 18px;
   }
+  
   #fullscreen-button:hover {
     background-color: #2980b9;
     transform: translateY(-2px);
@@ -222,6 +248,7 @@
 </style>
 </head>
 <body>
+<!-- --- HTML Structure --- -->
 <div class="game-container" id="game-container">
   <div class="game-area" id="game-area">
     <div class="game-header">
@@ -246,331 +273,348 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  // DOM Elements
-  const gameArea = document.getElementById("game-area");
-  const scoreDisplay = document.getElementById("score");
-  const playerWheel = document.getElementById("player-wheel");
-  const gameOverScreen = document.getElementById("game-over-screen");
-  const finalScoreDisplay = document.getElementById("final-score");
-  const restartButton = document.getElementById("restart-button");
-  const fullscreenButton = document.getElementById("fullscreen-button");
-  const gameContainer = document.getElementById("game-container");
-  const darkModeToggle = document.getElementById("dark-mode-toggle");
+  // --- JavaScript Logic ---
+  document.addEventListener("DOMContentLoaded", () => {
+    // --- DOM Elements & Configuration ---
+    const gameArea = document.getElementById("game-area");
+    const scoreDisplay = document.getElementById("score");
+    const playerWheel = document.getElementById("player-wheel");
+    const gameOverScreen = document.getElementById("game-over-screen");
+    const finalScoreDisplay = document.getElementById("final-score");
+    const restartButton = document.getElementById("restart-button");
+    const fullscreenButton = document.getElementById("fullscreen-button");
+    const gameContainer = document.getElementById("game-container");
+    const darkModeToggle = document.getElementById("dark-mode-toggle");
 
-  // Icons (Using text emojis for reliability)
-  const moonIcon = `🌕`;
-  const sunIcon = `☀️`;
+    // Icons
+    const moonIcon = `🌕`;
+    const sunIcon = `☀️`;
 
-  // Game Colors
-  const colors = ["#f1c40f", "#e67e22", "#e74c3c", "#9b59b6", "#3498db", "#2ecc71"];
-  const segmentAngle = 360 / colors.length;
+    // Game Colors
+    const colors = ["#f1c40f", "#e67e22", "#e74c3c", "#9b59b6", "#3498db", "#2ecc71"];
+    const segmentAngle = 360 / colors.length;
 
-  // Game State
-  let rotation = 0, score = 0, gameActive = false, animationFrameId = null;
-  let isDragging = false, lastAngle = 0, streak = 0, ended = false;
-  let fallingObjects = [];
-  
-  // Game Parameters
-  const objectSpeed = 1.8;
-  let spawnInterval = 1500;
-  const spawnIntervalDecreaseRate = 1.5;
-  const streakThreshold = 5;
-  let lastSpawnTime = 0;
+    // Game State
+    let rotation = 0, score = 0, gameActive = false, animationFrameId = null;
+    let isDragging = false, lastAngle = 0, streak = 0, ended = false;
+    let fallingObjects = [];
 
-  // Audio Synthesis with Tone.js
-  let audioInitialized = false;
-  let synth, mismatchSynth, gameOverSynth;
+    // Game Parameters
+    const objectSpeed = 1.8;
+    let spawnInterval = 1500;
+    const spawnIntervalDecreaseRate = 1.5;
+    const streakThreshold = 5;
+    let lastSpawnTime = 0;
 
-  function setupAudio() {
-    synth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
-    mismatchSynth = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 10, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination();
-    gameOverSynth = new Tone.MembraneSynth().toDestination();
-    Tone.Transport.bpm.value = 100;
-  }
+    // Audio Synthesis with Tone.js
+    let audioInitialized = false;
+    let synth, mismatchSynth, gameOverSynth;
 
-  function initializeAudioContext() {
-    if (audioInitialized) return;
-    Tone.start();
-    setupAudio();
-    audioInitialized = true;
-  }
+    function setupAudio() {
+      synth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 } }).toDestination();
+      mismatchSynth = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 10, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } }).toDestination();
+      gameOverSynth = new Tone.MembraneSynth().toDestination();
+      Tone.Transport.bpm.value = 100;
+    }
 
-  // --- Visual & Haptic Feedback ---
-  function flashGlow(color) { playerWheel.style.boxShadow = `0 0 50px ${color}`; setTimeout(() => { if (!ended) playerWheel.style.boxShadow = ""; }, 300); }
-  function streakGlow() { playerWheel.style.boxShadow = "0 0 60px gold, 0 0 80px orange"; setTimeout(() => { if (!ended) playerWheel.style.boxShadow = ""; }, 800); }
-  function mismatchShake() { playerWheel.style.boxShadow = "0 0 50px var(--accent-red)"; playerWheel.animate([{ transform: `rotate(${rotation}deg) translateX(0px)` }, { transform: `rotate(${rotation}deg) translateX(-15px)` }, { transform: `rotate(${rotation}deg) translateX(15px)` }, { transform: `rotate(${rotation}deg) translateX(0px)` }], { duration: 400, easing: "ease-in-out" }); setTimeout(() => { if (!ended) playerWheel.style.boxShadow = ""; }, 500); }
-  function hapticFeedback(type = "light") { if (!navigator.vibrate) return; const patterns = { light: [40], error: [120, 80, 120], streak: [50, 50, 50, 50, 100] }; navigator.vibrate(patterns[type] || patterns.light); }
-  function showFloatingText(text, color) { const span = document.createElement("span"); span.textContent = text; Object.assign(span.style, { position: 'absolute', left: '50%', top: '60%', transform: 'translate(-50%, -50%)', fontSize: '2rem', fontWeight: 'bold', color: color, zIndex: '999', pointerEvents: 'none' }); gameArea.appendChild(span); span.animate([{ transform: "translate(-50%, -50%) scale(1)", opacity: 1 }, { transform: "translate(-50%, -150%) scale(1.5)", opacity: 0 }], { duration: 800, easing: "ease-out" }); setTimeout(() => span.remove(), 900); }
+    function initializeAudioContext() {
+      if (audioInitialized) return;
+      Tone.start();
+      setupAudio();
+      audioInitialized = true;
+    }
 
-  // --- UI & Controls ---
-  // Fullscreen toggle function with vendor compatibility and error handling
-  function toggleFullscreen() {
-    const doc = document;
-    const elem = gameContainer;
+    // --- Visual & Haptic Feedback ---
+    function flashGlow(color) { playerWheel.style.boxShadow = `0 0 50px ${color}`; setTimeout(() => { if (!ended) playerWheel.style.boxShadow = ""; }, 300); }
+    function streakGlow() { playerWheel.style.boxShadow = "0 0 60px gold, 0 0 80px orange"; setTimeout(() => { if (!ended) playerWheel.style.boxShadow = ""; }, 800); }
+    function mismatchShake() { 
+      playerWheel.style.boxShadow = "0 0 50px var(--accent-red)"; 
+      playerWheel.animate([
+        { transform: `translateX(-50%) rotate(${rotation}deg) translateX(0px)` }, 
+        { transform: `translateX(-50%) rotate(${rotation}deg) translateX(-15px)` }, 
+        { transform: `translateX(-50%) rotate(${rotation}deg) translateX(15px)` }, 
+        { transform: `translateX(-50%) rotate(${rotation}deg) translateX(0px)` }
+      ], { duration: 400, easing: "ease-in-out" }); 
+      setTimeout(() => { if (!ended) playerWheel.style.boxShadow = ""; }, 500); 
+    }
+    function hapticFeedback(type = "light") { if (!navigator.vibrate) return; const patterns = { light: [40], error: [120, 80, 120], streak: [50, 50, 50, 50, 100] }; navigator.vibrate(patterns[type] || patterns.light); }
+    function showFloatingText(text, color) {
+      const span = document.createElement("span");
+      span.textContent = text;
+      Object.assign(span.style, {
+        position: 'absolute',
+        left: '50%',
+        top: '60%',
+        transform: 'translate(-50%, -50%)',
+        fontSize: '2rem',
+        fontWeight: 'bold',
+        color: color,
+        zIndex: '999',
+        pointerEvents: 'none'
+      });
+      gameArea.appendChild(span);
+      span.animate([{ transform: "translate(-50%, -50%) scale(1)", opacity: 1 }, { transform: "translate(-50%, -150%) scale(1.5)", opacity: 0 }], { duration: 800, easing: "ease-out" });
+      setTimeout(() => span.remove(), 900);
+    }
 
-    if (
-      !doc.fullscreenElement &&
-      !doc.webkitFullscreenElement &&
-      !doc.mozFullScreenElement &&
-      !doc.msFullscreenElement
-    ) {
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch((err) => console.error("Fullscreen error:", err));
-      } else if (elem.webkitRequestFullscreen) { /* Safari */
-        elem.webkitRequestFullscreen();
-      } else if (elem.mozRequestFullScreen) { /* Firefox */
-        elem.mozRequestFullScreen();
-      } else if (elem.msRequestFullscreen) { /* IE/Edge */
-        elem.msRequestFullscreen();
+    // --- UI & Controls ---
+    function toggleFullscreen() {
+      const doc = document;
+      const elem = gameContainer;
+      if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
+        if (elem.requestFullscreen) { elem.requestFullscreen().catch((err) => console.error("Fullscreen error:", err)); }
+        else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+        else if (elem.mozRequestFullScreen) { elem.mozRequestFullScreen(); }
+        else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
+      } else {
+        if (doc.exitFullscreen) { doc.exitFullscreen(); }
+        else if (doc.webkitExitFullscreen) { doc.webkitExitFullscreen(); }
+        else if (doc.mozCancelFullScreen) { doc.mozCancelFullScreen(); }
+        else if (doc.msExitFullscreen) { doc.msExitFullscreen(); }
       }
-    } else {
-      if (doc.exitFullscreen) {
-        doc.exitFullscreen();
-      } else if (doc.webkitExitFullscreen) {
-        doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) {
-        doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) {
-        doc.msExitFullscreen();
+    }
+
+    function onFullscreenChange() {
+      const doc = document;
+      const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+      if (isFullscreen) {
+        gameArea.style.height = "100vh";
+        gameArea.style.width = "100vw";
+        gameArea.style.maxHeight = "100vh";
+        gameArea.style.maxWidth = "100vw";
+        fullscreenButton.textContent = "Exit";
+        document.body.style.overflow = "hidden";
+      } else {
+        gameArea.style.height = "90vh";
+        gameArea.style.width = "100%";
+        gameArea.style.maxHeight = "900px";
+        gameArea.style.maxWidth = "600px";
+        fullscreenButton.textContent = "Fullscreen";
+        document.body.style.overflow = "";
       }
     }
-  }
 
-  // Update gameArea styles on fullscreen change to fill screen properly
-  function onFullscreenChange() {
-    const doc = document;
-    const isFullscreen =
-      doc.fullscreenElement ||
-      doc.webkitFullscreenElement ||
-      doc.mozFullScreenElement ||
-      doc.msFullscreenElement;
-
-    if (isFullscreen) {
-      gameArea.style.height = "100vh";
-      gameArea.style.width = "100vw";
-      gameArea.style.maxHeight = "100vh";
-      gameArea.style.maxWidth = "100vw";
-      fullscreenButton.textContent = "Exit";
-      // Prevent scroll on body during fullscreen
-      document.body.style.overflow = "hidden";
-    } else {
-      gameArea.style.height = "90vh";
-      gameArea.style.width = "100%";
-      gameArea.style.maxHeight = "900px";
-      gameArea.style.maxWidth = "600px";
-      fullscreenButton.textContent = "Fullscreen";
-      document.body.style.overflow = "";
-    }
-  }
-
-  // Event subscription for fullscreen changes with cross-browser prefixes
-  document.addEventListener("fullscreenchange", onFullscreenChange);
-  document.addEventListener("webkitfullscreenchange", onFullscreenChange);
-  document.addEventListener("mozfullscreenchange", onFullscreenChange);
-  document.addEventListener("MSFullscreenChange", onFullscreenChange);
-
-  // Add event listener for fullscreen button
-  fullscreenButton.addEventListener("click", toggleFullscreen);
-
-  darkModeToggle.addEventListener('click', () => { 
-    document.body.classList.toggle('dark-mode');
-    updateIcons(); 
-  });
-
-  function updateIcons() { 
-    darkModeToggle.innerHTML = document.body.classList.contains('dark-mode') ? sunIcon : moonIcon; 
-  }
-
-  // --- Core Game Logic ---
-  function spawnObject() { 
-    const randomColor = colors[Math.floor(Math.random() * colors.length)]; 
-    const spawnX = gameArea.clientWidth / 2 - 25; 
-    const obj = document.createElement("div"); 
-    obj.className = "falling-object"; 
-    obj.style.backgroundColor = randomColor; 
-    obj.style.left = `${spawnX}px`; 
-    obj.style.top = "-50px"; 
-    obj.dataset.color = randomColor; 
-    obj.dataset.y = -50; 
-    fallingObjects.push(obj); 
-    gameArea.appendChild(obj); 
-  }
-  
-  const colorCanvas = document.createElement("canvas"); 
-  const colorCtx = colorCanvas.getContext("2d", { willReadFrequently: true }); 
-  
-  function normalizeColor(colorStr) { 
-      colorCtx.fillStyle = colorStr; 
-      return colorCtx.fillStyle; 
-  }
-
-  function gameLoop() {
-    if (!gameActive || ended) return;
-    const now = Date.now();
-    if (now - lastSpawnTime > spawnInterval) { 
-      spawnObject(); 
-      lastSpawnTime = now; 
+    function updateIcons() {
+      darkModeToggle.innerHTML = document.body.classList.contains('dark-mode') ? sunIcon : moonIcon;
     }
 
-    for (let i = fallingObjects.length - 1; i >= 0; i--) {
-      const obj = fallingObjects[i];
-      const y = parseFloat(obj.dataset.y) + objectSpeed;
-      obj.style.transform = `translateY(${y}px)`;
-      obj.dataset.y = y;
+    // --- Core Game Logic ---
+    function spawnObject() {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      const spawnX = gameArea.clientWidth / 2 - 25;
+      const obj = document.createElement("div");
+      obj.className = "falling-object";
+      obj.style.backgroundColor = randomColor;
+      obj.style.left = `${spawnX}px`;
+      obj.style.top = "-50px";
+      obj.dataset.color = randomColor;
+      obj.dataset.y = -50;
+      fallingObjects.push(obj);
+      gameArea.appendChild(obj);
+    }
 
-      const wheelTop = playerWheel.offsetTop;
-      if (y + 50 > wheelTop) {
-        const wheelRect = playerWheel.getBoundingClientRect(); 
-        const objectRect = obj.getBoundingClientRect(); 
-        const wheelCenterX = wheelRect.left + wheelRect.width / 2; 
-        const wheelCenterY = wheelRect.top + wheelRect.height / 2; 
-        const objectCenterX = objectRect.left + objectRect.width / 2; 
-        const objectCenterY = objectRect.top + objectRect.height / 2; 
-        const distance = Math.hypot(objectCenterX - wheelCenterX, objectCenterY - wheelCenterY);
-        
-        if (distance < wheelRect.width / 2) {
-          const collisionAngleRad = Math.atan2(objectCenterY - wheelCenterY, objectCenterX - wheelCenterX); 
-          const collisionAngleDeg = (collisionAngleRad * 180) / Math.PI; 
-          const segmentAngleAtCollision = (collisionAngleDeg + 90 - rotation + 720) % 360; 
-          const segmentIndex = Math.floor(segmentAngleAtCollision / segmentAngle) % colors.length;
-          
-          const fallingObjectColor = normalizeColor(obj.dataset.color);
-          const wheelSegmentColor = normalizeColor(colors[segmentIndex]);
+    function gameLoop() {
+      if (!gameActive || ended) return;
+      const now = Date.now();
+      if (now - lastSpawnTime > spawnInterval) {
+        spawnObject();
+        lastSpawnTime = now;
+      }
 
-          if (fallingObjectColor === wheelSegmentColor) {
-            score++; 
-            streak++; 
-            scoreDisplay.textContent = score; 
-            spawnInterval = Math.max(200, spawnInterval - spawnIntervalDecreaseRate); 
-            initializeAudioContext();
-            synth.triggerAttackRelease("C5", "8n");
-            flashGlow(obj.dataset.color); 
-            hapticFeedback("light"); 
-            showFloatingText("+1", "limegreen");
-            if (streak > 0 && streak % streakThreshold === 0) { 
-                score += 5; 
-                scoreDisplay.textContent = score; 
-                synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.1);
-                streakGlow(); 
-                hapticFeedback("streak"); 
-                showFloatingText(`+5 COMBO!`, "gold"); 
+      for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const obj = fallingObjects[i];
+        const y = parseFloat(obj.dataset.y) + objectSpeed;
+        obj.style.transform = `translateY(${y}px)`;
+        obj.dataset.y = y;
+
+        const wheelTop = playerWheel.offsetTop;
+
+        // Check for collision with the wheel
+        if (y + 50 > wheelTop && y < wheelTop + playerWheel.clientHeight) {
+          const wheelRect = playerWheel.getBoundingClientRect();
+          const objectRect = obj.getBoundingClientRect();
+          const wheelCenterX = wheelRect.left + wheelRect.width / 2;
+          const wheelCenterY = wheelRect.top + wheelRect.height / 2;
+          const objectCenterX = objectRect.left + objectRect.width / 2;
+          const objectCenterY = objectRect.top + objectRect.height / 2;
+          const distance = Math.hypot(objectCenterX - wheelCenterX, objectCenterY - wheelCenterY);
+
+          if (distance < wheelRect.width / 2) {
+            let collisionAngleDeg = (Math.atan2(objectCenterY - wheelCenterY, objectCenterX - wheelCenterX) * 180) / Math.PI;
+            // Special case for near-central hits to ensure consistency
+            if (Math.abs(objectCenterX - wheelCenterX) < 10) {
+              collisionAngleDeg = -90;
             }
-          } else {
-            score = Math.max(0, score - 1); 
-            streak = 0; 
-            scoreDisplay.textContent = score; 
-            // Fix: Add back some time to the spawn interval on a miss
-            spawnInterval = Math.min(1500, spawnInterval + spawnIntervalDecreaseRate);
-            initializeAudioContext();
-            mismatchSynth.triggerAttackRelease("C3", "8n");
-            mismatchShake(); 
-            hapticFeedback("error"); 
-            showFloatingText("-1", "red");
+            const segmentAngleAtCollision = ((collisionAngleDeg + 90 - rotation + 720) % 360 + 360) % 360;
+            const segmentIndex = Math.floor(segmentAngleAtCollision / segmentAngle) % colors.length;
+
+            const fallingObjectColor = obj.dataset.color;
+            const wheelSegmentColor = colors[segmentIndex];
+
+            // A collision has occurred. Now handle the outcome and end the game if needed.
+            obj.remove();
+            fallingObjects.splice(i, 1);
+
+            if (fallingObjectColor === wheelSegmentColor) {
+              // Correct match - increase score
+              score++;
+              streak++;
+              scoreDisplay.textContent = score;
+              spawnInterval = Math.max(200, spawnInterval - spawnIntervalDecreaseRate);
+              initializeAudioContext();
+              synth.triggerAttackRelease("C5", "8n");
+              flashGlow(obj.dataset.color);
+              hapticFeedback("light");
+              showFloatingText("+1", "limegreen");
+              if (streak > 0 && streak % streakThreshold === 0) {
+                score += 5;
+                scoreDisplay.textContent = score;
+                synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.1);
+                streakGlow();
+                hapticFeedback("streak");
+                showFloatingText(`+5 COMBO!`, "gold");
+              }
+            } else {
+              // Incorrect match - decrease score
+              score--;
+              streak = 0;
+              scoreDisplay.textContent = score;
+              showFloatingText("-1", "red");
+              initializeAudioContext();
+              mismatchSynth.triggerAttackRelease("C3", "8n");
+              mismatchShake();
+              hapticFeedback("error");
+              if (score < 0) {
+                endGame();
+              }
+            }
           }
-          obj.remove(); 
+        } else if (y > gameArea.clientHeight) {
+          // Missed objects - decrease score
+          showFloatingText("-1", "red");
+          score--;
+          streak = 0;
+          scoreDisplay.textContent = score;
+          initializeAudioContext();
+          mismatchSynth.triggerAttackRelease("C3", "8n");
+          obj.remove();
           fallingObjects.splice(i, 1);
-          if (score <= 0) { endGame(); }
+          if (score < 0) {
+            endGame();
+          }
         }
-      } else if (y > gameArea.clientHeight) {
-        score = Math.max(0, score - 1); 
-        streak = 0; 
-        scoreDisplay.textContent = score; 
-        // Fix: Add back some time to the spawn interval on a miss
-        spawnInterval = Math.min(1500, spawnInterval + spawnIntervalDecreaseRate);
-        initializeAudioContext();
-        mismatchSynth.triggerAttackRelease("C3", "8n");
-        mismatchShake(); 
-        hapticFeedback("error"); 
-        showFloatingText("MISS!", "red"); 
-        obj.remove(); 
-        fallingObjects.splice(i, 1); 
-        if (score <= 0) { endGame(); }
+      }
+
+      if (gameActive && !ended) {
+        animationFrameId = requestAnimationFrame(gameLoop);
       }
     }
-    if (gameActive && !ended) { animationFrameId = requestAnimationFrame(gameLoop); }
-  }
 
-  // --- Player Input Handlers ---
-  function getAngle(x, y) { 
-    const rect = playerWheel.getBoundingClientRect(); 
-    const wheelX = rect.left + rect.width / 2; 
-    const wheelY = rect.top + rect.height / 2; 
-    return (Math.atan2(y - wheelY, x - wheelX) * 180) / Math.PI; 
-  }
-  function handleStart(e) { 
-    initializeAudioContext(); 
-    if (!gameActive || ended) return; 
-    isDragging = true; 
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY; 
-    lastAngle = getAngle(clientX, clientY); 
-    playerWheel.style.transition = "none"; 
-  }
-  function handleMove(e) { 
-    if (!isDragging || !gameActive || ended) return; 
-    e.preventDefault(); 
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY; 
-    const newAngle = getAngle(clientX, clientY); 
-    let angleDifference = newAngle - lastAngle; 
-    if (angleDifference > 180) angleDifference -= 360; 
-    if (angleDifference < -180) angleDifference += 360; 
-    rotation += angleDifference; 
-    playerWheel.style.transform = `rotate(${rotation}deg)`; 
-    lastAngle = newAngle; 
-  }
-  function handleEnd() { 
-    isDragging = false; 
-    playerWheel.style.transition = "transform 0.2s ease-out, box-shadow 0.3s ease, border-color 0.3s ease"; 
-  }
+    // --- Player Input Handlers ---
+    function getAngle(x, y) {
+      const rect = playerWheel.getBoundingClientRect();
+      const wheelX = rect.left + rect.width / 2;
+      const wheelY = rect.top + rect.height / 2;
+      return (Math.atan2(y - wheelY, x - wheelX) * 180) / Math.PI;
+    }
+    
+    function handleStart(e) {
+      initializeAudioContext();
+      if (!gameActive || ended) return;
+      isDragging = true;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      lastAngle = getAngle(clientX, clientY);
+      playerWheel.style.transition = "none";
+    }
+    
+    function handleMove(e) {
+      if (!isDragging || !gameActive || ended) return;
+      e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const newAngle = getAngle(clientX, clientY);
+      let angleDifference = newAngle - lastAngle;
+      if (angleDifference > 180) angleDifference -= 360;
+      if (angleDifference < -180) angleDifference += 360;
+      rotation += angleDifference;
+      playerWheel.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+      lastAngle = newAngle;
+    }
+    
+    function handleEnd() {
+      isDragging = false;
+      playerWheel.style.transition = "transform 0.2s ease-out, box-shadow 0.3s ease, border-color 0.3s ease";
+    }
 
-  // --- Game State Management ---
-  function startGame() {
-    score = 0; streak = 0; ended = false; gameActive = true;
-    scoreDisplay.textContent = score;
-    fallingObjects.forEach(obj => obj.remove()); fallingObjects = [];
-    gameOverScreen.classList.remove("visible");
-    spawnInterval = 1500; rotation = 0; playerWheel.style.transform = `rotate(0deg)`;
-    updateWheelSegments(); lastSpawnTime = Date.now();
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    animationFrameId = requestAnimationFrame(gameLoop);
-  }
-  function updateWheelSegments() { 
-    let gradientString = "conic-gradient("; 
-    colors.forEach((color, index) => { 
-      const start = index * segmentAngle; 
-      const end = (index + 1) * segmentAngle; 
-      gradientString += `${color} ${start}deg ${end}deg, `; 
-    }); 
-    gradientString = gradientString.slice(0, -2) + ")"; 
-    playerWheel.style.background = gradientString; 
-  }
-  function endGame() {
-    if (ended) return;
-    ended = true; gameActive = false;
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-    finalScoreDisplay.textContent = `Score: ${score}`;
-    gameOverScreen.classList.add("visible");
-    initializeAudioContext();
-    gameOverSynth.triggerAttackRelease("C2", "1n");
-  }
+    // --- Game State Management ---
+    function startGame() {
+      score = 0;
+      streak = 0;
+      ended = false;
+      gameActive = true;
+      scoreDisplay.textContent = score;
+      fallingObjects.forEach(obj => obj.remove());
+      fallingObjects = [];
+      gameOverScreen.classList.remove("visible");
+      spawnInterval = 1500;
+      rotation = 0;
+      playerWheel.style.transform = `translateX(-50%) rotate(0deg)`;
+      updateWheelSegments();
+      lastSpawnTime = Date.now();
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(gameLoop);
+    }
 
-  // Event Listeners
-  playerWheel.addEventListener("mousedown", handleStart); 
-  document.addEventListener("mousemove", handleMove); 
-  document.addEventListener("mouseup", handleEnd); 
-  playerWheel.addEventListener("mouseleave", handleEnd);
-  playerWheel.addEventListener("touchstart", handleStart, { passive: false }); 
-  document.addEventListener("touchmove", handleMove, { passive: false }); 
-  document.addEventListener("touchend", handleEnd);
-  restartButton.addEventListener("click", startGame);
+    function updateWheelSegments() {
+      let gradientString = "conic-gradient(";
+      colors.forEach((color, index) => {
+        const start = index * segmentAngle;
+        const end = (index + 1) * segmentAngle;
+        gradientString += `${color} ${start}deg ${end}deg, `;
+      });
+      gradientString = gradientString.slice(0, -2) + ")";
+      playerWheel.style.background = gradientString;
+    }
 
-  // Initial Setup
-  updateIcons();
-  startGame();
-});
+    function endGame() {
+      if (ended) return;
+      ended = true;
+      gameActive = false;
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+      const displayedScore = Math.max(0, score);
+      scoreDisplay.textContent = displayedScore;
+      finalScoreDisplay.textContent = `Score: ${displayedScore}`;
+      gameOverScreen.classList.add("visible");
+      initializeAudioContext();
+      gameOverSynth.triggerAttackRelease("C2", "1n");
+    }
+
+    // Event Listeners
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+    document.addEventListener("mozfullscreenchange", onFullscreenChange);
+    document.addEventListener("MSFullscreenChange", onFullscreenChange);
+    fullscreenButton.addEventListener("click", toggleFullscreen);
+    darkModeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      updateIcons();
+    });
+
+    playerWheel.addEventListener("mousedown", handleStart);
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleEnd);
+    playerWheel.addEventListener("mouseleave", handleEnd);
+    playerWheel.addEventListener("touchstart", handleStart, { passive: false });
+    document.addEventListener("touchmove", handleMove, { passive: false });
+    document.addEventListener("touchend", handleEnd);
+    restartButton.addEventListener("click", startGame);
+
+    // Initial Setup
+    updateIcons();
+    startGame();
+  });
 </script>
 </body>
 </html>
