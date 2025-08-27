@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Color Match Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+        rel="stylesheet"
+    />
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: "Inter", sans-serif;
             background-color: #f0f0f0;
             color: #333;
             overflow: hidden;
@@ -42,16 +45,18 @@
             align-items: center;
             padding: 20px;
             box-sizing: border-box;
+            transition: height 0.3s ease;
         }
         .game-header {
             width: 100%;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             padding: 10px;
             box-sizing: border-box;
             color: #555;
             text-align: center;
+            gap: 20px;
         }
         .game-score {
             font-size: 2rem;
@@ -132,7 +137,7 @@
             color: #333;
             margin-bottom: 40px;
         }
-        .restart-button {
+        .restart-button, #fullscreen-button {
             padding: 12px 30px;
             background-color: #66bb6a;
             color: #ffffff;
@@ -144,268 +149,317 @@
             transition: transform 0.2s ease-in-out, background-color 0.2s;
             box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.3);
         }
-        .restart-button:hover {
+        .restart-button:hover, #fullscreen-button:hover {
             background-color: #5cb85d;
             transform: translateY(-2px);
+        }
+        #fullscreen-button {
+            background-color: #3498db;
+            font-size: 1rem;
+            padding: 6px 15px;
+            border-radius: 15px;
+        }
+        /* Fullscreen styles for the game area */
+        :fullscreen #game-area,
+        :-webkit-full-screen #game-area,
+        :-moz-full-screen #game-area,
+        :-ms-fullscreen #game-area {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 10px !important;
+            box-sizing: border-box;
         }
     </style>
 </head>
 <body>
-
-<div class="game-container">
-    <div class="game-area" id="game-area">
-        <div class="game-header">
-            <div class="game-title">Color Match</div>
-            <div class="game-score" id="score">0</div>
-        </div>
-        <!-- Player wheel with conic gradient for segments -->
-        <div class="player-wheel" id="player-wheel">
-            <div class="wheel-center" id="wheel-center"></div>
-        </div>
-        <!-- Fixed player pointer -->
-        <div class="player-pointer" id="player-pointer"></div>
-
-        <!-- Game Over Screen -->
-        <div class="game-over-screen" id="game-over-screen">
-            <div class="game-over-text">Game Over</div>
-            <div class="final-score" id="final-score">Score: 0</div>
-            <button class="restart-button" id="restart-button">Play Again</button>
+    <div class="game-container">
+        <div class="game-area" id="game-area">
+            <div class="game-header">
+                <div class="game-title">Color Match</div>
+                <div class="game-score" id="score">0</div>
+                <button id="fullscreen-button">Fullscreen</button>
+            </div>
+            <div class="player-wheel" id="player-wheel">
+                <div class="wheel-center" id="wheel-center"></div>
+            </div>
+            <div class="player-pointer" id="player-pointer"></div>
+            <div class="game-over-screen" id="game-over-screen">
+                <div class="game-over-text">Game Over</div>
+                <div class="final-score" id="final-score">Score: 0</div>
+                <button class="restart-button" id="restart-button">Play Again</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- Game Elements & Variables ---
-        const gameArea = document.getElementById('game-area');
-        const scoreDisplay = document.getElementById('score');
-        const playerWheel = document.getElementById('player-wheel');
-        const gameOverScreen = document.getElementById('game-over-screen');
-        const finalScoreDisplay = document.getElementById('final-score');
-        const restartButton = document.getElementById('restart-button');
+    <!-- Audio definitions -->
+    <audio id="bg-music" loop preload="auto" volume="0.3">
+      <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_f7c647d8d4.mp3?filename=calm-relaxing-acoustic-guitar-6488.mp3" type="audio/mpeg" />
+    </audio>
 
-        // Color palette with six colors
-        const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#2ecc71'];
-        const numColors = colors.length;
-        const segmentAngle = 360 / numColors;
-        let rotation = 0;
-        let score = 0;
-        let gameActive = false;
-        let fallingObjects = [];
+    <audio id="match-sound" preload="auto">
+      <source src="https://www.superluigibros.com/downloads/sounds/GAMECUBE/SUPERMARIOSUNSHINE/WAV/classiccoin.wav" />
+    </audio>
 
-        // Game settings
-        const objectSpeed = 1.80;
-        let spawnInterval = 1500; // ms
-        const spawnIntervalDecreaseRate = 20; // ms
+    <audio id="mismatch-sound" preload="auto">
+      <source src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3" type="audio/mpeg" />
+    </audio>
 
-        let lastSpawnTime = Date.now();
-        let animationFrameId = null;
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+          const gameArea = document.getElementById('game-area');
+          const scoreDisplay = document.getElementById('score');
+          const playerWheel = document.getElementById('player-wheel');
+          const gameOverScreen = document.getElementById('game-over-screen');
+          const finalScoreDisplay = document.getElementById('final-score');
+          const restartButton = document.getElementById('restart-button');
+          const fullscreenButton = document.getElementById('fullscreen-button');
+          const gameContainer = document.querySelector('.game-container');
 
-        // Variables for the spin gesture
-        let isDragging = false;
-        let lastAngle = 0;
+          const bgMusic = document.getElementById('bg-music');
+          const matchSound = document.getElementById('match-sound');
+          const mismatchSound = document.getElementById('mismatch-sound');
 
-        // --- Game Logic ---
+          const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#2ecc71'];
+          const segmentAngle = 360 / colors.length;
+          let rotation = 0;
+          let score = 0;
+          let gameActive = false;
+          let fallingObjects = [];
 
-        // Function to create and add a new falling object
-        function spawnObject() {
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            const gameAreaRect = gameArea.getBoundingClientRect();
+          const objectSpeed = 1.8;
+          let spawnInterval = 1500;
+          const spawnIntervalDecreaseRate = 1;
 
-            // Calculate the horizontal spawning position to be directly above the player wheel's center
-            const spawnX = (gameAreaRect.width / 2) - (50 / 2); // 50 is the object width
+          let lastSpawnTime = Date.now();
+          let animationFrameId = null;
+          let isDragging = false;
+          let lastAngle = 0;
 
-            const obj = document.createElement('div');
-            obj.className = 'falling-object';
-            obj.style.backgroundColor = randomColor;
-            obj.style.left = `${spawnX}px`;
-            obj.style.top = `-50px`;
-            obj.dataset.color = randomColor; // Store the original hex color
-            obj.dataset.y = -50;
-            fallingObjects.push(obj);
-            gameArea.appendChild(obj);
-        }
+          function toggleFullscreen() {
+              if (!document.fullscreenElement) {
+                  if (gameContainer.requestFullscreen) {
+                      gameContainer.requestFullscreen();
+                  } else if (gameContainer.mozRequestFullScreen) {
+                      gameContainer.mozRequestFullScreen();
+                  } else if (gameContainer.webkitRequestFullscreen) {
+                      gameContainer.webkitRequestFullscreen();
+                  } else if (gameContainer.msRequestFullscreen) {
+                      gameContainer.msRequestFullscreen();
+                  }
+              } else {
+                  if (document.exitFullscreen) {
+                      document.exitFullscreen();
+                  } else if (document.mozCancelFullScreen) {
+                      document.mozCancelFullScreen();
+                  } else if (document.webkitExitFullscreen) {
+                      document.webkitExitFullscreen();
+                  } else if (document.msExitFullscreen) {
+                      document.msExitFullscreen();
+                  }
+              }
+          }
 
-        // Main game loop
-        function gameLoop() {
-            if (!gameActive) return;
+          function setGameAreaHeight() {
+              if (document.fullscreenElement) {
+                  gameArea.style.height = `${window.innerHeight}px`;
+                  gameArea.style.maxHeight = `${window.innerHeight}px`;
+              } else {
+                  gameArea.style.height = '';
+                  gameArea.style.maxHeight = '';
+              }
+          }
 
-            const now = Date.now();
-            if (now - lastSpawnTime > spawnInterval) {
-                spawnObject();
-                lastSpawnTime = now;
-            }
+          document.addEventListener('fullscreenchange', () => {
+              setGameAreaHeight();
+              if (document.fullscreenElement) {
+                  window.addEventListener('resize', setGameAreaHeight);
+                  fullscreenButton.textContent = 'Exit Fullscreen';
+              } else {
+                  window.removeEventListener('resize', setGameAreaHeight);
+                  fullscreenButton.textContent = 'Fullscreen';
+              }
+          });
 
-            // Update positions of all falling objects
-            fallingObjects.forEach((obj, index) => {
-                const y = parseFloat(obj.dataset.y) + objectSpeed;
-                obj.style.transform = `translateY(${y}px)`;
-                obj.dataset.y = y;
+          fullscreenButton.addEventListener('click', toggleFullscreen);
 
-                // Check for collision with the wheel
-                if (y + 50 > gameArea.clientHeight - playerWheel.clientHeight) {
-                    const wheelRect = playerWheel.getBoundingClientRect();
-                    const objectRect = obj.getBoundingClientRect();
+          function spawnObject() {
+              const randomColor = colors[Math.floor(Math.random() * colors.length)];
+              const gameAreaRect = gameArea.getBoundingClientRect();
+              const spawnX = gameAreaRect.width / 2 - 25; // half of object width
 
-                    const wheelCenterCoords = {
-                        x: wheelRect.left + wheelRect.width / 2,
-                        y: wheelRect.top + wheelRect.height / 2
-                    };
-                    const objectCenter = {
-                        x: objectRect.left + objectRect.width / 2,
-                        y: objectRect.top + objectRect.height / 2
-                    };
+              const obj = document.createElement('div');
+              obj.className = 'falling-object';
+              obj.style.backgroundColor = randomColor;
+              obj.style.left = `${spawnX}px`;
+              obj.style.top = '-50px';
+              obj.dataset.color = randomColor;
+              obj.dataset.y = -50;
+              fallingObjects.push(obj);
+              gameArea.appendChild(obj);
+          }
 
-                    const dx = objectCenter.x - wheelCenterCoords.x;
-                    const dy = objectCenter.y - wheelCenterCoords.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+          function gameLoop() {
+              if (!gameActive) return;
+              const now = Date.now();
+              if (now - lastSpawnTime > spawnInterval) {
+                  spawnObject();
+                  lastSpawnTime = now;
+              }
+              fallingObjects.forEach((obj, index) => {
+                  const y = parseFloat(obj.dataset.y) + objectSpeed;
+                  obj.style.transform = `translateY(${y}px)`;
+                  obj.dataset.y = y;
 
-                    // Check if object is within the wheel's radius
-                    if (distance < wheelRect.width / 2) {
-                        // Calculate the collision angle relative to the wheel's center
-                        const collisionAngleRad = Math.atan2(dy, dx);
-                        const collisionAngleDeg = collisionAngleRad * 180 / Math.PI;
+                  if (y + 50 > gameArea.clientHeight - playerWheel.clientHeight) {
+                      const wheelRect = playerWheel.getBoundingClientRect();
+                      const objectRect = obj.getBoundingClientRect();
 
-                        // Normalize the angle to be in the range [0, 360) and adjust for CSS conic-gradient
-                        // The conic-gradient starts at the top (12 o'clock).
-                        // Math.atan2 gives 0 at the right (3 o'clock).
-                        // A simple way to map this is to add 90 degrees.
-                        // We also need to factor in the wheel's rotation.
-                        // The CSS `rotate` is clockwise, so we subtract it from our angle.
-                        const segmentAngleAtCollision = (collisionAngleDeg + 90 - rotation + 360 * 2) % 360;
+                      const wheelCenterCoords = {
+                          x: wheelRect.left + wheelRect.width / 2,
+                          y: wheelRect.top + wheelRect.height / 2,
+                      };
+                      const objectCenter = {
+                          x: objectRect.left + objectRect.width / 2,
+                          y: objectRect.top + objectRect.height / 2,
+                      };
 
-                        // Get the index of the segment that was hit
-                        const segmentIndex = Math.floor(segmentAngleAtCollision / segmentAngle);
+                      const dx = objectCenter.x - wheelCenterCoords.x;
+                      const dy = objectCenter.y - wheelCenterCoords.y;
+                      const distance = Math.sqrt(dx * dx + dy * dy);
 
-                        // Compare the falling object's color with the color of the collided segment
-                        if (obj.dataset.color === colors[segmentIndex]) {
-                            score++;
-                            scoreDisplay.textContent = score;
+                      if (distance < wheelRect.width / 2) {
+                          const collisionAngleRad = Math.atan2(dy, dx);
+                          const collisionAngleDeg = (collisionAngleRad * 180) / Math.PI;
 
-                            spawnInterval = Math.max(200, spawnInterval - spawnIntervalDecreaseRate);
-                        } else {
-                            score--;
-                            scoreDisplay.textContent = score;
-                            if (score < 0) {
+                          const segmentAngleAtCollision =
+                            (collisionAngleDeg + 90 - rotation + 720) % 360;
+
+                          const segmentIndex = Math.floor(segmentAngleAtCollision / segmentAngle);
+
+                          if (obj.dataset.color === colors[segmentIndex]) {
+                              score++;
+                              scoreDisplay.textContent = score;
+                              spawnInterval = Math.max(200, spawnInterval - spawnIntervalDecreaseRate);
+                              matchSound.currentTime = 0;
+                              matchSound.play().catch(() => {});
+                          } else {
+                              score--;
+                              scoreDisplay.textContent = score;
+                              mismatchSound.currentTime = 0;
+                              mismatchSound.play().catch(() => {});
+                              if (score < 0) {
                                 endGame();
                                 return;
-                            }
-                        }
-                        
-                        // Remove the object after collision check
-                        gameArea.removeChild(obj);
-                        fallingObjects.splice(index, 1);
-                    }
-                } else if (y + 50 > gameArea.clientHeight) {
-                    // Missed object, game over
-                    endGame();
-                    return;
-                }
-            });
+                              }
+                          }
+                          gameArea.removeChild(obj);
+                          fallingObjects.splice(index, 1);
+                      }
+                  } else if (y + 50 > gameArea.clientHeight) {
+                      endGame();
+                      return;
+                  }
+              });
+              animationFrameId = requestAnimationFrame(gameLoop);
+          }
 
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
+          function getAngle(x, y) {
+              const rect = playerWheel.getBoundingClientRect();
+              const wheelX = rect.left + rect.width / 2;
+              const wheelY = rect.top + rect.height / 2;
+              return (Math.atan2(y - wheelY, x - wheelX) * 180) / Math.PI;
+          }
 
-        // Handle the spin gesture
-        function getAngle(x, y) {
-            const rect = playerWheel.getBoundingClientRect();
-            const wheelX = rect.left + rect.width / 2;
-            const wheelY = rect.top + rect.height / 2;
-            return Math.atan2(y - wheelY, x - wheelX) * 180 / Math.PI;
-        }
+          function handleStart(e) {
+              if (!gameActive) return;
+              isDragging = true;
+              const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+              const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+              lastAngle = getAngle(clientX, clientY);
+              playerWheel.style.transition = 'none';
+          }
 
-        function handleStart(e) {
-            if (!gameActive) return;
-            isDragging = true;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            lastAngle = getAngle(clientX, clientY);
-            playerWheel.style.transition = 'none'; // Disable transition for smooth dragging
-        }
+          function handleMove(e) {
+              if (!isDragging || !gameActive) return;
+              e.preventDefault();
+              const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+              const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+              const newAngle = getAngle(clientX, clientY);
+              let angleDifference = newAngle - lastAngle;
+              if (angleDifference > 180) angleDifference -= 360;
+              if (angleDifference < -180) angleDifference += 360;
+              rotation += angleDifference;
+              playerWheel.style.transform = `rotate(${rotation}deg)`;
+              lastAngle = newAngle;
+          }
 
-        function handleMove(e) {
-            if (!isDragging || !gameActive) return;
-            e.preventDefault(); // Prevent scrolling on mobile devices
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const newAngle = getAngle(clientX, clientY);
-            let angleDifference = newAngle - lastAngle;
+          function handleEnd() {
+              isDragging = false;
+              playerWheel.style.transition = 'transform 0.2s ease-in-out';
+          }
 
-            // Handle angle wrap-around
-            if (angleDifference > 180) angleDifference -= 360;
-            if (angleDifference < -180) angleDifference += 360;
+          function startGame() {
+              score = 0;
+              scoreDisplay.textContent = score;
+              gameActive = true;
 
-            rotation += angleDifference;
-            playerWheel.style.transform = `rotate(${rotation}deg)`;
-            lastAngle = newAngle;
-        }
+              bgMusic.currentTime = 0;
+              bgMusic.play().catch(() => {});
 
-        function handleEnd() {
-            isDragging = false;
-            playerWheel.style.transition = 'transform 0.2s ease-in-out'; // Re-enable transition
-        }
+              while (fallingObjects.length > 0) {
+                  const obj = fallingObjects.pop();
+                  if (obj.parentNode) obj.parentNode.removeChild(obj);
+              }
+              gameOverScreen.style.display = 'none';
+              spawnInterval = 1500;
+              rotation = 0;
+              playerWheel.style.transform = `rotate(0deg)`;
+              updateWheelSegments();
+              lastSpawnTime = Date.now();
+              animationFrameId = requestAnimationFrame(gameLoop);
+          }
 
-        // Start the game
-        function startGame() {
-            score = 0;
-            scoreDisplay.textContent = score;
-            gameActive = true;
-            // Remove all existing falling objects from the game area
-            while (fallingObjects.length > 0) {
-                const obj = fallingObjects.pop();
-                if (obj.parentNode) {
-                    obj.parentNode.removeChild(obj);
-                }
-            }
-            
-            gameOverScreen.style.display = 'none';
+          function updateWheelSegments() {
+              let gradientString = 'conic-gradient(';
+              colors.forEach((color, index) => {
+                  const start = index * segmentAngle;
+                  const end = (index + 1) * segmentAngle;
+                  gradientString += `${color} ${start}deg ${end}deg, `;
+              });
+              gradientString = gradientString.slice(0, -2) + ')';
+              playerWheel.style.background = gradientString;
+          }
 
-            // Reset game settings
-            spawnInterval = 1500;
-            rotation = 0;
-            playerWheel.style.transform = `rotate(0deg)`;
-            updateWheelSegments();
+          function endGame() {
+              gameActive = false;
+              if (animationFrameId) {
+                  cancelAnimationFrame(animationFrameId);
+              }
+              finalScoreDisplay.textContent = `Score: ${score}`;
+              gameOverScreen.style.display = 'flex';
 
-            lastSpawnTime = Date.now();
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
+              bgMusic.pause();
+              bgMusic.currentTime = 0;
+          }
 
-        function updateWheelSegments() {
-            let gradientString = 'conic-gradient(';
-            colors.forEach((color, index) => {
-                const start = index * segmentAngle;
-                const end = (index + 1) * segmentAngle;
-                gradientString += `${color} ${start}deg ${end}deg, `;
-            });
-            gradientString = gradientString.slice(0, -2) + ')';
-            playerWheel.style.background = gradientString;
-        }
+          playerWheel.addEventListener('mousedown', handleStart);
+          playerWheel.addEventListener('mousemove', handleMove);
+          playerWheel.addEventListener('mouseup', handleEnd);
+          playerWheel.addEventListener('mouseleave', handleEnd);
 
-        // End the game
-        function endGame() {
-            gameActive = false;
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-            finalScoreDisplay.textContent = `Score: ${score}`;
-            gameOverScreen.style.display = 'flex';
-        }
+          playerWheel.addEventListener('touchstart', (e) => handleStart(e), { passive: false });
+          playerWheel.addEventListener('touchmove', (e) => handleMove(e), { passive: false });
+          playerWheel.addEventListener('touchend', handleEnd);
 
-        // --- Event Listeners for Touch and Mouse ---
-        playerWheel.addEventListener('mousedown', handleStart);
-        playerWheel.addEventListener('mousemove', handleMove);
-        playerWheel.addEventListener('mouseup', handleEnd);
-        playerWheel.addEventListener('mouseleave', handleEnd); // End drag if mouse leaves the wheel
+          restartButton.addEventListener('click', startGame);
 
-        playerWheel.addEventListener('touchstart', (e) => handleStart(e), { passive: false });
-        playerWheel.addEventListener('touchmove', (e) => handleMove(e), { passive: false });
-        playerWheel.addEventListener('touchend', handleEnd);
-
-        restartButton.addEventListener('click', startGame);
-
-        // Start the game for the first time
-        startGame();
-    });
-</script>
+          startGame();
+      });
+    </script>
 </body>
+
 </html>
